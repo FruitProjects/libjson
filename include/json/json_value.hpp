@@ -4,6 +4,8 @@
 #include <vector>
 #include <unordered_map>
 
+#include <json/utils.hpp>
+
 namespace Fruit {
 
 /*
@@ -41,7 +43,41 @@ public:
   JsonValue(const object_t &obj) : value_(obj){};
   JsonValue(object_t &&obj): value_(std::move(obj)) {};
 
-  std::string serialize() { throw; }
+  std::string serialize() const {
+    return std::visit(overloaded{
+        [](std::nullptr_t = nullptr) -> std::string { return "null"; },
+        [](bool b) -> std::string { return b ? "true" : "false"; },
+        [](int i) { return std::to_string(i); },
+        [](double d) { return std::to_string(d); },
+        [](const std::string &s) { return '\"' + s + '\"'; },
+        [](const list_t &lst) {
+          std::string result = "[";
+          bool isFirst = true;
+          const auto &obj = lst;
+          for (const auto &elem : obj) {
+            if (!isFirst)
+              result += ",";
+            result += elem.serialize();
+            isFirst = false;
+          }
+          result += "]";
+          return result;
+        },
+        [](const object_t &object) {
+          std::string result = "{";
+          bool isFirst = true;
+          const auto &obj = object;
+          for (const auto &[k, v] : obj) {
+            if (!isFirst)
+              result += ",";
+            result += '\"' + k + "\": " + v.serialize();
+            isFirst = false;
+          }
+          result += "}";
+          return result;
+        }
+    }, value_);
+  }
 
 };
 
