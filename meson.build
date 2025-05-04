@@ -3,7 +3,7 @@ project('libjson', 'cpp',
   default_options : ['warning_level=3',
                      'cpp_std=c++14'])
 
-exe = executable('libjson', 'tests/test_basic.cpp',
-  install : true)
+incdir = include_directories('include')
 
-test('basic', exe)
+value_constructor_test = executable('libjson', 'tests/test_constructors.cpp', include_directories: incdir)
+test('value_constructor_test', value_constructor_test)
