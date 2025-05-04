@@ -25,9 +25,9 @@ private:
   value_t value_;
 
 public:
-  JsonValue() : value_(nullptr){};
-  JsonValue(std::nullptr_t = nullptr) : value_(nullptr) {}
-  explicit JsonValue(bool b) : value_(b) {};
+  JsonValue(void) : value_(nullptr){};
+  JsonValue(std::nullptr_t) : value_(nullptr) {}
+  JsonValue(bool b) : value_(b) {};
   JsonValue(int i) : value_(i){};
   JsonValue(double d) : value_(d){};
 
@@ -43,40 +43,48 @@ public:
   JsonValue(const object_t &obj) : value_(obj){};
   JsonValue(object_t &&obj): value_(std::move(obj)) {};
 
-  std::string serialize() const {
+  std::string serialize() const noexcept {
     return std::visit(overloaded{
-        [](std::nullptr_t = nullptr) -> std::string { return "null"; },
-        [](bool b) -> std::string { return b ? "true" : "false"; },
-        [](int i) { return std::to_string(i); },
-        [](double d) { return std::to_string(d); },
-        [](const std::string &s) { return '\"' + s + '\"'; },
-        [](const list_t &lst) {
-          std::string result = "[";
-          bool isFirst = true;
-          const auto &obj = lst;
-          for (const auto &elem : obj) {
-            if (!isFirst)
-              result += ",";
-            result += elem.serialize();
-            isFirst = false;
-          }
-          result += "]";
-          return result;
-        },
-        [](const object_t &object) {
-          std::string result = "{";
-          bool isFirst = true;
-          const auto &obj = object;
-          for (const auto &[k, v] : obj) {
-            if (!isFirst)
-              result += ",";
-            result += '\"' + k + "\": " + v.serialize();
-            isFirst = false;
-          }
-          result += "}";
-          return result;
-        }
+          [](std::nullptr_t = nullptr) -> std::string { return "null"; },
+          [](bool b) -> std::string { return b ? "true" : "false"; },
+          [](int i) { return std::to_string(i); },
+          [](double d) { return std::to_string(d); },
+          [](const std::string &s) { return _serialize_string(s); },
+          [](const list_t &lst) { return _serialize_list(lst); },
+          [](const object_t &object) { return _serialize_object(object); },
     }, value_);
+  }
+
+ private:
+  static std::string _serialize_string(const std::string &s) noexcept {
+    return '\"' + s + '\"';
+  }
+  static std::string _serialize_list(const list_t &list) noexcept {
+    std::string result = "[";
+    bool isFirst = true;
+    const auto &obj = list;
+    for (const auto &elem : obj) {
+      if (!isFirst)
+        result += ",";
+      result += elem.serialize();
+      isFirst = false;
+    }
+    result += "]";
+    return result;
+  }
+
+  static std::string _serialize_object(const object_t &object) noexcept {
+    std::string result = "{";
+    bool isFirst = true;
+    const auto &obj = object;
+    for (const auto &[k, v] : obj) {
+      if (!isFirst)
+        result += ",";
+      result += _serialize_string(k) + ": " + v.serialize();
+      isFirst = false;
+    }
+    result += "}";
+    return result;
   }
 
 };
